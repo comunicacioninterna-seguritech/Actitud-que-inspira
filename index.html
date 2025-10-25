@@ -301,36 +301,50 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     // Cargar episodio
-    function loadEpisode(i, autoplay=false){
+    function loadEpisode(i, autoplay = false){
+      // 1. Pausar y silenciar lo que estuviera sonando ANTES de cambiar
+      audioEl.pause();
+      videoEl.pause();
+      // opcional pero recomendable: resetear tiempo para que no retomen en background
+      audioEl.currentTime = 0;
+      videoEl.currentTime = 0;
+
       currentIndex = i;
       [...list.children].forEach((c, idx) => c.classList.toggle('active', idx===i));
       const ep = EPISODES[i];
 
-      cover.src = ep.cover; cover.alt = 'Portada – ' + ep.title;
-      epTitle.textContent = ep.title; status.textContent = 'Listo';
+      cover.src = ep.cover;
+      cover.alt = 'Portada – ' + ep.title;
+      epTitle.textContent = ep.title;
+      status.textContent = 'Listo';
 
-      // Si hay video, usamos SIEMPRE el <video> como fuente
+      // 2. Asignar la nueva fuente según tenga video o no
       if (hasVideo(i)){
         videoEl.src = ep.video;
         videoEl.poster = ep.cover || '';
-        audioEl.removeAttribute('src'); // no usamos <audio> en episodios con video
+        audioEl.removeAttribute('src'); // importante: quita el src del audio
+        visualMode = (visualMode === 'video') ? 'video' : 'audio'; // respeta modo actual si quieres
       } else {
-        // Solo audio
         audioEl.src = ep.src || '';
         videoEl.removeAttribute('src');
         videoEl.removeAttribute('poster');
-        visualMode = 'audio'; // fuerza a audio
+        visualMode = 'audio'; // fuerza modo audio si no hay video
       }
 
-      // Reset UI
+      // 3. Reset UI
       setPlayIcon();
-      progress.value = 0; timeEl.textContent = '00:00 / 00:00';
+      progress.value = 0;
+      timeEl.textContent = '00:00 / 00:00';
 
       updateAVAvailability();
 
+      // 4. Autoplay sólo sobre el medio correcto
       if (autoplay){
-        const p = activeMedia().play(); if (p && p.catch) p.catch(()=>{});
+        const m = activeMedia();
+        const p = m.play();
+        if (p && p.catch) p.catch(()=>{});
       }
+
       syncListHeight();
     }
 
